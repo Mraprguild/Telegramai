@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  telegram-bot:
+    build: .
+    container_name: telegram-chatgpt-bot
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - PORT=5000
+    volumes:
+      - bot_data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - bot_network
+
+  # Optional: Web dashboard service
+  web-dashboard:
+    build: .
+    container_name: telegram-bot-dashboard
+    restart: unless-stopped
+    ports:
+      - "5001:5000"
+    environment:
+      - PORT=5000
+    command: ["python", "web_server.py"]
+    depends_on:
+      - telegram-bot
+    networks:
+      - bot_network
+
+volumes:
+  bot_data:
+    driver: local
+
+networks:
+  bot_network:
+    driver: bridge
